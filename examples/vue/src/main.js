@@ -17,7 +17,7 @@ let instance = null;
 function render(props = {}) {
   const { container } = props;
   router = new VueRouter({
-    base: window.__POWERED_BY_QIANKUN__ ? '/vue' : '/',
+    base: window.__POWERED_BY_QIANKUN__ ? '/vue' : '/', // history模式下需要根据存放路径配置
     mode: 'history',
     routes,
   });
