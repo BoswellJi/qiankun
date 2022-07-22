@@ -211,6 +211,7 @@ export function start(opts: FrameworkConfiguration = {}) {
   } = frameworkConfiguration;
 
   if (prefetch) {
+    // 处理预加载的策略
     doPrefetchStrategy(microApps, prefetch, importEntryOpts);
   }
 

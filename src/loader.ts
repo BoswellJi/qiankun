@@ -162,7 +162,7 @@ function getRender(appInstanceId: string, appContent: string, legacyRender?: HTM
 
       return legacyRender({ loading, appContent: element ? appContent : '' });
     }
-
+    // 获取dom对象
     const containerElement = getContainer(container!);
 
     // The container might have be removed after micro app unmounted.
@@ -191,6 +191,7 @@ function getRender(appInstanceId: string, appContent: string, legacyRender?: HTM
       }
 
       // append the element to container if it exist
+      // 将应用的index.html的内容放到指定容器之中
       if (element) {
         rawAppendChild.call(containerElement, element);
       }
@@ -245,7 +246,9 @@ export async function loadApp<T extends ObjectType>(
   configuration: FrameworkConfiguration = {},
   lifeCycles?: FrameworkLifeCycles<T>,
 ): Promise<ParcelConfigObjectGetter> {
+  // 获取app信息
   const { entry, name: appName } = app;
+  // 生成app实例Id
   const appInstanceId = genAppInstanceIdByName(appName);
 
   const markName = `[qiankun] App ${appInstanceId} Loading`;
