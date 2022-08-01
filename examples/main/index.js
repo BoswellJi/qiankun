@@ -35,9 +35,9 @@ registerMicroApps(
     {
       name: 'react15',
       entry: '//localhost:7102',
-      container: '#subapp-viewport',
+      container: '#subapp-viewport1',
       loader,
-      activeRule: '/react15',
+      activeRule: '/react16',
     },
     {
       name: 'vue',
