@@ -7,8 +7,10 @@ import { SandBoxType } from '../interfaces';
 
 function iter(obj: typeof window, callbackFn: (prop: any) => void) {
   // eslint-disable-next-line guard-for-in, no-restricted-syntax
+  // 遍历对象自身和原型上的属性
   for (const prop in obj) {
     // patch for clearInterval for compatible reason, see #1490
+    // 找到自身属性，方法不需要保存
     if (obj.hasOwnProperty(prop) || prop === 'clearInterval') {
       callbackFn(prop);
     }
@@ -38,7 +40,7 @@ export default class SnapshotSandbox implements SandBox {
   }
 
   active() {
-    // 记录当前快照
+    // 记录当前快照,记录当前的window的情况
     this.windowSnapshot = {} as Window;
     iter(window, (prop) => {
       this.windowSnapshot[prop] = window[prop];
@@ -55,10 +57,12 @@ export default class SnapshotSandbox implements SandBox {
   inactive() {
     this.modifyPropsMap = {};
 
+    // 当前这个微应用的window
     iter(window, (prop) => {
       if (window[prop] !== this.windowSnapshot[prop]) {
         // 记录变更，恢复环境
         this.modifyPropsMap[prop] = window[prop];
+        // 恢复window
         window[prop] = this.windowSnapshot[prop];
       }
     });

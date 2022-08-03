@@ -40,6 +40,7 @@ export function createSandboxContainer(
 ) {
   let sandbox: SandBox;
   if (window.Proxy) {
+    // 使用松散的沙盒或者严谨的沙盒
     sandbox = useLooseSandbox ? new LegacySandbox(appName, globalContext) : new ProxySandbox(appName, globalContext);
   } else {
     sandbox = new SnapshotSandbox(appName);

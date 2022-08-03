@@ -79,7 +79,6 @@ const appConfigPromiseGetterMap = new Map<string, Promise<ParcelConfigObjectGett
 const containerMicroAppsMap = new Map<string, MicroApp[]>();
 
 /**
- *
  * @param app 微应用实例
  * @param configuration
  * @param lifeCycles
@@ -214,7 +213,7 @@ export function start(opts: FrameworkConfiguration = {}) {
     // 处理预加载的策略
     doPrefetchStrategy(microApps, prefetch, importEntryOpts);
   }
-
+  // 根据浏览器选择沙盒方案
   frameworkConfiguration = autoDowngradeForLowVersionBrowser(frameworkConfiguration);
 
   startSingleSpa({ urlRerouteOnly });
