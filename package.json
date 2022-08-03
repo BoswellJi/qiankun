@@ -61,20 +61,6 @@
     "ci": "yarn lint && yarn build && yarn test",
     "test": "cross-env NODE_ENV=test jest"
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "pre-push": "yarn test"
-    }
-  },
-  "lint-staged": {
-    "**/*.{js,ts,json,css,md}": [
-      "prettier -w"
-    ],
-    "**/*.{js,ts}": [
-      "yarn lint:fix"
-    ]
-  },
   "jest": {
     "coveragePathIgnorePatterns": [
       "/node_modules/",
