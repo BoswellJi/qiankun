@@ -65,7 +65,11 @@ export function registerMicroApps<T extends ObjectType>(
         )();
 
         return {
-          mount: [async () => loader(true), ...toArray(mount), async () => loader(false)],
+          mount: [
+            async () => loader(true), 
+            ...toArray(mount), 
+            async () => loader(false)
+          ],
           ...otherMicroAppConfigs,
         };
       },
