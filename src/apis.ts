@@ -57,6 +57,7 @@ export function registerMicroApps<T extends ObjectType>(
     registerApplication({
       name,
       app: async () => {
+        // 加载函数：加载动画
         loader(true);
         await frameworkStartedDefer.promise;
 
