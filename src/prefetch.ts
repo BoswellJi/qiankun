@@ -17,6 +17,7 @@ declare global {
 }
 
 // RIC and shim for browsers setTimeout() without it
+// RIC和浏览器setTimeout腻子没有它的时候
 const requestIdleCallback =
   window.requestIdleCallback ||
   function requestIdleCallback(cb: CallableFunction) {
@@ -41,6 +42,7 @@ declare global {
   }
 }
 
+// 是否为慢网络（非无线网，非以太网，2，3G网络类型的，都是慢网络
 const isSlowNetwork = navigator.connection
   ? navigator.connection.saveData ||
     (navigator.connection.type !== 'wifi' &&

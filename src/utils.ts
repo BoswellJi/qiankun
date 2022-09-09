@@ -259,10 +259,20 @@ export function getXPathForElement(el: Node, document: Document): string | void 
   return xpath;
 }
 
+/**
+ * 根据选择器获取dom对象
+ * @param container 
+ * @returns 
+ */
 export function getContainer(container: string | HTMLElement): HTMLElement | null {
   return typeof container === 'string' ? document.querySelector(container) : container;
 }
 
+/**
+ * 
+ * @param container 
+ * @returns 
+ */
 export function getContainerXPath(container?: string | HTMLElement): string | void {
   if (container) {
     const containerElement = getContainer(container);

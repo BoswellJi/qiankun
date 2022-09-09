@@ -30,6 +30,7 @@ export function runDefaultMountEffects(defaultAppLink: string) {
 
 export function runAfterFirstMounted(effect: () => void) {
   // can not use addEventListener once option for ie support
+  // 不能使用添加事件监听once选项来支持ie
   window.addEventListener('single-spa:first-mount', function listener() {
     if (process.env.NODE_ENV === 'development') {
       console.timeEnd(firstMountLogLabel);

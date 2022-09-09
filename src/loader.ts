@@ -146,7 +146,9 @@ type ElementRender = (
 
 /**
  * Get the render function
+ * 获取渲染函数
  * If the legacy render function is provide, used as it, otherwise we will insert the app element to target container by qiankun
+ * 如果提供了遗留的渲染函数，
  * @param appInstanceId
  * @param appContent
  * @param legacyRender
@@ -265,6 +267,7 @@ export async function loadApp<T extends ObjectType>(
   } = configuration;
 
   // get the entry html content and script executor
+  // 获取入口html内容和脚本执行器
   const { template, execScripts, assetPublicPath } = await importEntry(entry, importEntryOpts);
 
   // as single-spa load and bootstrap new app parallel with other apps unmounting
@@ -273,9 +276,9 @@ export async function loadApp<T extends ObjectType>(
   if (await validateSingularMode(singular, app)) {
     await (prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise);
   }
-
+  // 获取微应用的入口html
   const appContent = getDefaultTplWrapper(appInstanceId)(template);
-
+  // 是否隔离样式
   const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
 
   if (process.env.NODE_ENV === 'development' && strictStyleIsolation) {
@@ -342,6 +345,7 @@ export async function loadApp<T extends ObjectType>(
   await execHooksChain(toArray(beforeLoad), app, global);
 
   // get the lifecycle hooks from module exports
+  // 从模块导出中获取生命周期钩子
   const scriptExports: any = await execScripts(global, sandbox && !useLooseSandbox);
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
     scriptExports,
@@ -381,6 +385,7 @@ export async function loadApp<T extends ObjectType>(
           return undefined;
         },
         // initial wrapper element before app mount/remount
+        // 微应用安装/重新安装前，初始包裹元素
         async () => {
           appWrapperElement = initialAppWrapperElement;
           appWrapperGetter = getAppWrapperGetter(

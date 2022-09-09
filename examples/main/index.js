@@ -32,13 +32,13 @@ registerMicroApps(
         data: 'main-react16'
       }
     },
-    // {
-    //   name: 'react15',
-    //   entry: '//localhost:7102',
-    //   container: '#subapp-viewport',
-    //   loader,
-    //   activeRule: '/react15',
-    // },
+    {
+      name: 'react15',
+      entry: '//localhost:7102',
+      container: '#subapp-viewport',
+      loader,
+      activeRule: '/react15',
+    },
     {
       name: 'vue',
       entry: '//localhost:7101',
@@ -111,7 +111,9 @@ setDefaultMountApp('/react16');
 /**
  * Step4 启动应用
  */
-start();
+start({
+  prefetch: false
+});
 
 runAfterFirstMounted(() => {
   console.log('[MainApp] first app mounted');
