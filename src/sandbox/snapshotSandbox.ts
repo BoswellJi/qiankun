@@ -21,18 +21,28 @@ function iter(obj: typeof window, callbackFn: (prop: any) => void) {
  * 基于 diff 方式实现的沙箱，用于不支持 Proxy 的低版本浏览器
  */
 export default class SnapshotSandbox implements SandBox {
+  // 
   proxy: WindowProxy;
 
+  // 沙箱的名称
   name: string;
 
+  // 沙箱的类型
   type: SandBoxType;
 
+  // 沙箱的运行状态
   sandboxRunning = true;
 
+  // 全局环境的快照
   private windowSnapshot!: Window;
 
+  // 全局环境的变更
   private modifyPropsMap: Record<any, any> = {};
 
+  /**
+   * 构造快照沙盒
+   * @param name 微应用的名称
+   */
   constructor(name: string) {
     this.name = name;
     this.proxy = window;
@@ -55,10 +65,12 @@ export default class SnapshotSandbox implements SandBox {
   }
 
   inactive() {
+    // 全局环境的变更情况
     this.modifyPropsMap = {};
 
     // 当前这个微应用的window
     iter(window, (prop) => {
+      //  当前环境下的window和原始window对象对比属性，不同的属性即被当前微应用修改过的
       if (window[prop] !== this.windowSnapshot[prop]) {
         // 记录变更，恢复环境
         this.modifyPropsMap[prop] = window[prop];
@@ -67,10 +79,12 @@ export default class SnapshotSandbox implements SandBox {
       }
     });
 
+    // 开发环境下，打印出当前微应用下全局环境的变化
     if (process.env.NODE_ENV === 'development') {
       console.info(`[qiankun:sandbox] ${this.name} origin window restore...`, Object.keys(this.modifyPropsMap));
     }
 
+    // 沙箱的运行状态
     this.sandboxRunning = false;
   }
 }

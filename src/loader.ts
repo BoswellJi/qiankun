@@ -252,8 +252,9 @@ export async function loadApp<T extends ObjectType>(
   const { entry, name: appName } = app;
   // 生成app实例Id
   const appInstanceId = genAppInstanceIdByName(appName);
-
+  // 性能测量的标记名称
   const markName = `[qiankun] App ${appInstanceId} Loading`;
+  // 性能测试
   if (process.env.NODE_ENV === 'development') {
     performanceMark(markName);
   }
@@ -271,8 +272,10 @@ export async function loadApp<T extends ObjectType>(
   const { template, execScripts, assetPublicPath } = await importEntry(entry, importEntryOpts);
 
   // as single-spa load and bootstrap new app parallel with other apps unmounting
+  // 因为single-spa加载和启动新微应用与其他微应用并行
   // (see https://github.com/CanopyTax/single-spa/blob/master/src/navigation/reroute.js#L74)
   // we need wait to load the app until all apps are finishing unmount in singular mode
+  // 我们需要等待加载微应用直到在单模式下所有微应用完成卸载
   if (await validateSingularMode(singular, app)) {
     await (prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise);
   }
@@ -281,12 +284,13 @@ export async function loadApp<T extends ObjectType>(
   // 是否隔离样式
   const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
 
+  // 开发环境 && 样式隔离3.0将会被移除
   if (process.env.NODE_ENV === 'development' && strictStyleIsolation) {
     console.warn(
       "[qiankun] strictStyleIsolation configuration will be removed in 3.0, pls don't depend on it or use experimentalStyleIsolation instead!",
     );
   }
-
+  // 是否启动作用域css
   const scopedCSS = isEnableScopedCSS(sandbox);
   // 微应用的index.html
   let initialAppWrapperElement: HTMLElement | null = createElement(
@@ -295,10 +299,11 @@ export async function loadApp<T extends ObjectType>(
     scopedCSS,
     appInstanceId,
   );
-  // 微应用安装的容器
+  // 微应用安装的DOM节点
   const initialContainer = 'container' in app ? app.container : undefined;
+  // 微应用是否存在render
   const legacyRender = 'render' in app ? app.render : undefined;
-
+  // 获取微应用的渲染
   const render = getRender(appInstanceId, appContent, legacyRender);
 
   // 第一次加载设置应用可见区域 dom 结构
@@ -319,6 +324,7 @@ export async function loadApp<T extends ObjectType>(
   const useLooseSandbox = typeof sandbox === 'object' && !!sandbox.loose;
   let sandboxContainer;
   if (sandbox) {
+    // 创建沙盒容器
     sandboxContainer = createSandboxContainer(
       appInstanceId,
       // FIXME should use a strict sandbox logic while remount, see https://github.com/umijs/qiankun/issues/518
@@ -330,6 +336,7 @@ export async function loadApp<T extends ObjectType>(
     );
     // 用沙箱的代理对象作为接下来使用的全局对象
     global = sandboxContainer.instance.proxy as typeof window;
+    // 沙盒的安装和卸载
     mountSandbox = sandboxContainer.mount;
     unmountSandbox = sandboxContainer.unmount;
   }

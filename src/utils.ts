@@ -275,6 +275,7 @@ export function getContainer(container: string | HTMLElement): HTMLElement | nul
  */
 export function getContainerXPath(container?: string | HTMLElement): string | void {
   if (container) {
+    // 获取dom节点
     const containerElement = getContainer(container);
     if (containerElement) {
       return getXPathForElement(containerElement, document);
