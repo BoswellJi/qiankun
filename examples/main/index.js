@@ -112,7 +112,6 @@ setDefaultMountApp('/react16');
  * Step4 启动应用
  */
 start({
-  prefetch: false
 });
 
 runAfterFirstMounted(() => {
