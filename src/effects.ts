@@ -11,6 +11,7 @@ if (process.env.NODE_ENV === 'development') {
 
 export function setDefaultMountApp(defaultAppLink: string) {
   // can not use addEventListener once option for ie support
+  // 不能使用addEventListener once 选项来支持ie
   window.addEventListener('single-spa:no-app-change', function listener() {
     const mountedApps = getMountedApps();
     if (!mountedApps.length) {

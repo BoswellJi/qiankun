@@ -41,14 +41,15 @@ export function createSandboxContainer(
   speedySandBox?: boolean,
 ) {
   let sandbox: SandBox;
+  // 判断使用哪种沙盒
   if (window.Proxy) {
-    // 使用松散的沙盒或者严谨的沙盒
     sandbox = useLooseSandbox ? new LegacySandbox(appName, globalContext) : new ProxySandbox(appName, globalContext);
   } else {
     sandbox = new SnapshotSandbox(appName);
   }
 
   // some side effect could be be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase
+  // 一些副作用在启动时被调用，例如样式加载器的动态样式表注入，尤其是在开发阶段
   const bootstrappingFreers = patchAtBootstrapping(
     appName,
     elementGetter,
@@ -58,6 +59,7 @@ export function createSandboxContainer(
     speedySandBox,
   );
   // mounting freers are one-off and should be re-init at every mounting time
+  // 越来越多的自由是一次性的并且需要在每次安装中事件重新初始化
   let mountingFreers: Freer[] = [];
 
   let sideEffectsRebuilders: Rebuilder[] = [];
@@ -80,6 +82,7 @@ export function createSandboxContainer(
       const sideEffectsRebuildersAtMounting = sideEffectsRebuilders.slice(bootstrappingFreers.length);
 
       // must rebuild the side effects which added at bootstrapping firstly to recovery to nature state
+      // 必须重建首次启动时添加的副作用来修复到原生状态
       if (sideEffectsRebuildersAtBootstrapping.length) {
         sideEffectsRebuildersAtBootstrapping.forEach((rebuild) => rebuild());
       }
@@ -95,6 +98,7 @@ export function createSandboxContainer(
       }
 
       // clean up rebuilders
+      // 清理重建者
       sideEffectsRebuilders = [];
     },
 
@@ -103,7 +107,9 @@ export function createSandboxContainer(
      */
     async unmount() {
       // record the rebuilders of window side effects (event listeners or timers)
+      // 记录window的重建者副作用（事件监听器或者定时器）
       // note that the frees of mounting phase are one-off as it will be re-init at next mounting
+      // 注意安装阶段的自由是一次性的，因为它会在下次安装中时重新初始化
       sideEffectsRebuilders = [...bootstrappingFreers, ...mountingFreers].map((free) => free());
 
       sandbox.inactive();

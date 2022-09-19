@@ -209,15 +209,23 @@ export function performanceMeasure(measureName: string, markName: string) {
   }
 }
 
+/**
+ * 是否启用作用域css
+ * @param sandbox 
+ * @returns 
+ */
 export function isEnableScopedCSS(sandbox: FrameworkConfiguration['sandbox']) {
+  // 没有沙盒，不开启
   if (typeof sandbox !== 'object') {
     return false;
   }
 
+  // 沙盒开启严格样式隔离，不开启
   if (sandbox.strictStyleIsolation) {
     return false;
   }
 
+  // 沙盒实验样式隔离，即为开启
   return !!sandbox.experimentalStyleIsolation;
 }
 

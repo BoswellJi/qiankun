@@ -52,12 +52,14 @@ const isSlowNetwork = navigator.connection
 
 /**
  * prefetch assets, do nothing while in mobile network
+ * 预获取资源，移动网络不做任何事情
  * @param entry
  * @param opts
  */
 function prefetch(entry: Entry, opts?: ImportEntryOpts): void {
   if (!navigator.onLine || isSlowNetwork) {
     // Don't prefetch if in a slow network or offline
+    // 如果在慢网络或者离线情况下，不会预获取
     return;
   }
 
@@ -103,6 +105,7 @@ export function doPrefetchStrategy(
   } else if (isFunction(prefetchStrategy)) {
     (async () => {
       // critical rendering apps would be prefetch as earlier as possible
+      // 关键渲染微应用会尽可能容易预加载
       const { criticalAppNames = [], minorAppsName = [] } = await prefetchStrategy(apps);
       prefetchImmediately(appsName2Apps(criticalAppNames), importEntryOpts);
       prefetchAfterFirstMounted(appsName2Apps(minorAppsName), importEntryOpts);

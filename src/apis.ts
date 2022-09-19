@@ -52,6 +52,7 @@ export function registerMicroApps<T extends ObjectType>(
   lifeCycles?: FrameworkLifeCycles<T>,
 ) {
   // Each app only needs to be registered once
+  // 每个app只需要被注册一次
   const unregisteredApps = apps.filter((app) => !microApps.some((registeredApp) => registeredApp.name === app.name));
 
   microApps = [...microApps, ...unregisteredApps];
@@ -62,12 +63,13 @@ export function registerMicroApps<T extends ObjectType>(
     registerApplication({
       name,
       app: async () => {
-        // 加载函数：加载动画
+        // 加载动画
         loader(true);
-        // 延迟等待
+        // 延迟等待到开始处理微应用
         await frameworkStartedDefer.promise;
-
+        // 加载微应用
         const { mount, ...otherMicroAppConfigs } = (
+          // frameworkConfiguration: start()调用后赋值的
           await loadApp({ name, props, ...appConfig }, frameworkConfiguration, lifeCycles)
         )();
 
@@ -90,6 +92,7 @@ const appConfigPromiseGetterMap = new Map<string, Promise<ParcelConfigObjectGett
 const containerMicroAppsMap = new Map<string, MicroApp[]>();
 
 /**
+ * 手动加载微应用
  * @param app 微应用实例
  * @param configuration
  * @param lifeCycles
@@ -164,6 +167,7 @@ export function loadMicroApp<T extends ObjectType>(
 
     if (container) {
       // using appName as cache for internal experimental scenario
+      // 使用微应用名称作为内部实验场景的缓存
       if ($$cacheLifecycleByAppName) {
         const parcelConfigGetterPromise = appConfigPromiseGetterMap.get(name);
         if (parcelConfigGetterPromise) return wrapParcelConfigForRemount((await parcelConfigGetterPromise)(container));
@@ -241,5 +245,6 @@ export function start(opts: FrameworkConfiguration = {}) {
   startSingleSpa({ urlRerouteOnly });
   started = true;
 
+  // 可以开始加载微应用
   frameworkStartedDefer.resolve();
 }
