@@ -63,9 +63,9 @@ export function registerMicroApps<T extends ObjectType>(
     registerApplication({
       name,
       app: async () => {
-        // 加载动画
+        // 加载动画，这里是为了初始化加载微应用时的等待
         loader(true);
-        // 延迟等待到开始处理微应用
+        // 延迟等待到开始处理微应用（start()调用后才执行
         await frameworkStartedDefer.promise;
         // 加载微应用
         const { mount, ...otherMicroAppConfigs } = (
@@ -75,6 +75,7 @@ export function registerMicroApps<T extends ObjectType>(
 
         return {
           mount: [
+            // 这里是为了微应用切换时的等待
             async () => loader(true), 
             ...toArray(mount), 
             async () => loader(false)

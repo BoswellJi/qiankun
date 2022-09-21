@@ -62,6 +62,12 @@ function execHooksChain<T extends ObjectType>(
   return Promise.resolve();
 }
 
+/**
+ * 验证微应用架构是否为单一模式
+ * @param validate 
+ * @param app 
+ * @returns 
+ */
 async function validateSingularMode<T extends ObjectType>(
   validate: FrameworkConfiguration['singular'],
   app: LoadableApp<T>,
@@ -174,7 +180,7 @@ type ElementRender = (
  */
 function getRender(appInstanceId: string, appContent: string, legacyRender?: HTMLContentRender) {
   const render: ElementRender = ({ element, loading, container }, phase) => {
-    // 遗留渲染
+    // 遗留渲染,注册微应用时的渲染函数
     if (legacyRender) {
       if (process.env.NODE_ENV === 'development') {
         console.error(
@@ -184,7 +190,7 @@ function getRender(appInstanceId: string, appContent: string, legacyRender?: HTM
 
       return legacyRender({ loading, appContent: element ? appContent : '' });
     }
-    // 获取dom对象 字符串或者dom对象
+    // 获取dom对象 container：字符串或者dom对象
     const containerElement = getContainer(container!);
 
     // The container might have be removed after micro app unmounted.
@@ -208,14 +214,16 @@ function getRender(appInstanceId: string, appContent: string, legacyRender?: HTM
       assertElementExist(containerElement, errorMsg);
     }
 
+    // 微应用指定的容器(dom && 其中不包括给微应用创建的特定的容器（dom
     if (containerElement && !containerElement.contains(element)) {
       // clear the container
+      // 清理容器
       while (containerElement!.firstChild) {
         rawRemoveChild.call(containerElement, containerElement!.firstChild);
       }
 
       // append the element to container if it exist
-      // 将应用的index.html的内容放到指定容器之中
+      // 将微应用的特定容器id
       if (element) {
         rawAppendChild.call(containerElement, element);
       }
@@ -308,7 +316,7 @@ export async function loadApp<T extends ObjectType>(
   // 因为single-spa加载和启动新微应用与其他微应用并行
   // (see https://github.com/CanopyTax/single-spa/blob/master/src/navigation/reroute.js#L74)
   // we need wait to load the app until all apps are finishing unmount in singular mode
-  // 我们需要等待加载微应用直到在单模式下所有微应用完成卸载
+  // 我们需要等待加载微应用直到在单例模式下所有微应用完成卸载，单例架构模式下，需要等待上一个微应用卸载完成后在继续安装当前
   if (await validateSingularMode(singular, app)) {
     await (prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise);
   }
@@ -376,6 +384,7 @@ export async function loadApp<T extends ObjectType>(
     unmountSandbox = sandboxContainer.unmount;
   }
 
+  // 合并微应用的生命周期函数
   const {
     beforeUnmount = [],
     afterUnmount = [],
@@ -384,10 +393,11 @@ export async function loadApp<T extends ObjectType>(
     beforeLoad = [],
   } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) => concat(v1 ?? [], v2 ?? []));
 
+  // 触发加载之前函数
   await execHooksChain(toArray(beforeLoad), app, global);
 
   // get the lifecycle hooks from module exports
-  // 从模块导出中获取生命周期钩子
+  // 从模块导出中获取生命周期钩子，这里是从微应用的入口js文件中获取导出
   const scriptExports: any = await execScripts(global, sandbox && !useLooseSandbox, {
     scopedGlobalVariables: speedySandbox ? lexicalGlobals : [],
   });
@@ -399,12 +409,14 @@ export async function loadApp<T extends ObjectType>(
     sandboxContainer?.instance?.latestSetProp,
   );
 
+  // 给微应用暴漏的观察者接口
   const { onGlobalStateChange, setGlobalState, offGlobalStateChange }: Record<string, CallableFunction> =
     getMicroAppStateActions(appInstanceId);
 
   // FIXME temporary way
   const syncAppWrapperElement2Sandbox = (element: HTMLElement | null) => (initialAppWrapperElement = element);
 
+  // 整合微应用的启动，安装，更新，卸载生命周期函数
   const parcelConfigGetter: ParcelConfigObjectGetter = (remountContainer = initialContainer) => {
     let appWrapperElement: HTMLElement | null;
     let appWrapperGetter: ReturnType<typeof getAppWrapperGetter>;
@@ -423,6 +435,7 @@ export async function loadApp<T extends ObjectType>(
             }
           }
         },
+
         // 验证是横向拆分，还是竖向拆分
         async () => {
           if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {
@@ -431,6 +444,8 @@ export async function loadApp<T extends ObjectType>(
 
           return undefined;
         },
+
+        // 这块是为了获取微应用要安装到对应的哪个dom下，如果修改了dom容器，就重新创建
         // initial wrapper element before app mount/remount
         // 微应用安装/重新安装前，初始包裹元素
         async () => {
@@ -456,18 +471,27 @@ export async function loadApp<T extends ObjectType>(
 
           render({ element: appWrapperElement, loading: true, container: remountContainer }, 'mounting');
         },
-        // 安装沙盒
+
+        // 安装沙盒，为了让微应用执行不会污染全局状态
         mountSandbox,
+
+        // 这里执行了安装之前的生命周期函数，说明马上要开始安装微应用了
         // exec the chain after rendering to keep the behavior with beforeLoad
         // 渲染中执行链式调用来保持加载前的行为
         async () => execHooksChain(toArray(beforeMount), app, global),
-        // 安装微应用
+
+
+        // 安装微应用，这里调用的是微应用中导出来的mount方法，真是的微应用安装
         async (props) => mount({ ...props, container: appWrapperGetter(), setGlobalState, onGlobalStateChange }),
+
+        // 
         // finish loading after app mounted
         // 微应用安装后，结束loading
         async () => render({ element: appWrapperElement, loading: false, container: remountContainer }, 'mounted'),
-        // 执行
+        
+        // 执行安装完成微应用生命周期函数
         async () => execHooksChain(toArray(afterMount), app, global),
+
         // initialize the unmount defer after app mounted and resolve the defer after it unmounted
         // 在应用程序安装后初始化unmount延迟，并在它卸载后解决延迟
         async () => {
@@ -486,12 +510,16 @@ export async function loadApp<T extends ObjectType>(
       unmount: [
         // 卸载之前的钩子
         async () => execHooksChain(toArray(beforeUnmount), app, global),
+
         // 卸载微应用
         async (props) => unmount({ ...props, container: appWrapperGetter() }),
+
         // 卸载沙盒
         unmountSandbox,
+
         // 卸载后
         async () => execHooksChain(toArray(afterUnmount), app, global),
+        
         async () => {
           // 卸载dom容器
           render({ element: null, loading: false, container: remountContainer }, 'unmounted');
@@ -501,6 +529,8 @@ export async function loadApp<T extends ObjectType>(
           appWrapperElement = null;
           syncAppWrapperElement2Sandbox(appWrapperElement);
         },
+
+        // 标记微应用卸载已完成
         async () => {
           if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {
             prevAppUnmountedDeferred.resolve();

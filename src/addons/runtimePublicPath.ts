@@ -6,6 +6,11 @@ import type { FrameworkLifeCycles } from '../interfaces';
 
 const rawPublicPath = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 
+/**
+ * 微应用生命周期中的钩子函数
+ * @param global 
+ * @returns 
+ */
 export default function getAddOn(global: Window, publicPath = '/'): FrameworkLifeCycles<any> {
   let hasMountedOnce = false;
 

@@ -5,6 +5,11 @@
 
 import type { FrameworkLifeCycles } from '../interfaces';
 
+/**
+ * 微应用生命周期中的钩子函数
+ * @param global 
+ * @returns 
+ */
 export default function getAddOn(global: Window): FrameworkLifeCycles<any> {
   return {
     async beforeLoad() {
