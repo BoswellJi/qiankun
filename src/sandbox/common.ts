@@ -4,6 +4,8 @@
  */
 
 import { isBoundedFunction, isCallable, isConstructable } from '../utils';
+import { globals } from './globals';
+import { without } from 'lodash';
 
 type AppInstance = { name: string; window: WindowProxy };
 let currentRunningApp: AppInstance | null = null;
@@ -16,9 +18,12 @@ export function getCurrentRunningApp() {
 }
 
 export function setCurrentRunningApp(appInstance: { name: string; window: WindowProxy } | null) {
-  // set currentRunningApp and it's proxySandbox to global window, as its only use case is for document.createElement from now on, which hijacked by a global way
+  // Set currentRunningApp and it's proxySandbox to global window, as its only use case is for document.createElement from now on, which hijacked by a global way
   currentRunningApp = appInstance;
 }
+
+const spiedGlobals = ['window', 'self', 'globalThis', 'top', 'parent', 'hasOwnProperty', 'document', 'eval'];
+export const trustedGlobals = [...without(globals, ...spiedGlobals), 'requestAnimationFrame'];
 
 const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();
 
@@ -78,30 +83,3 @@ export function getTargetValue(target: any, value: any): any {
 
   return value;
 }
-
-export const unscopedGlobals = [
-  'undefined',
-  'Array',
-  'Object',
-  'String',
-  'Boolean',
-  'Math',
-  'Number',
-  'Symbol',
-  'parseFloat',
-  'Float32Array',
-  'isNaN',
-  'Infinity',
-  'Reflect',
-  'Float64Array',
-  'Function',
-  'Map',
-  'NaN',
-  'Promise',
-  'Proxy',
-  'Set',
-  'parseInt',
-  'requestAnimationFrame',
-];
-
-export const lexicalGlobals = [...unscopedGlobals, 'globalThis', 'window', 'self'];

@@ -5,8 +5,8 @@
  */
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
-import { nativeGlobal, nextTask } from '../utils';
-import { getCurrentRunningApp, getTargetValue, setCurrentRunningApp, unscopedGlobals } from './common';
+import { isPropertyFrozen, nativeGlobal, nextTask } from '../utils';
+import { getCurrentRunningApp, getTargetValue, trustedGlobals, setCurrentRunningApp } from './common';
 
 type SymbolTarget = 'target' | 'globalContext';
 
@@ -26,7 +26,7 @@ function uniq(array: Array<string | symbol>) {
 const rawObjectDefineProperty = Object.defineProperty;
 
 const variableWhiteListInDev =
-  process.env.NODE_ENV === 'development' || window.__QIANKUN_DEVELOPMENT__
+  process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development' || window.__QIANKUN_DEVELOPMENT__
     ? [
         // for react hot reload
         // see https://github.com/facebook/create-react-app/blob/66bf7dfc43350249e2f09d138a20840dae8a0a4a/packages/react-error-overlay/src/index.js#L180
@@ -34,7 +34,7 @@ const variableWhiteListInDev =
       ]
     : [];
 // who could escape the sandbox
-const variableWhiteList: PropertyKey[] = [
+const globalVariableWhiteList: string[] = [
   // FIXME System.js used a indirect call with eval, which would make it scope escape to global
   // To make System.js works well, we write it back to global window temporary
   // see https://github.com/systemjs/systemjs/blob/457f5b7e8af6bd120a279540477552a07d5de086/src/evaluate.js#L106
@@ -49,7 +49,7 @@ const variableWhiteList: PropertyKey[] = [
  variables who are impossible to be overwritten need to be escaped from proxy sandbox for performance reasons
  see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/unscopables
  */
-const unscopables = unscopedGlobals.reduce((acc, key) => ({ ...acc, [key]: true }), { __proto__: null });
+const unscopables = trustedGlobals.reduce((acc, key) => ({ ...acc, [key]: true }), { __proto__: null });
 
 const useNativeWindowForBindingsProps = new Map<PropertyKey, boolean>([
   ['fetch', true],
@@ -65,7 +65,7 @@ function createFakeWindow(globalContext: Window) {
   /*
    copy the non-configurable property of global to fakeWindow
    see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getOwnPropertyDescriptor
-   > A property cannot be reported as non-configurable, if it does not exists as an own property of the target object or if it exists as a configurable own property of the target object.
+   > A property cannot be reported as non-configurable, if it does not exist as an own property of the target object or if it exists as a configurable own property of the target object.
    */
   Object.getOwnPropertyNames(globalContext)
     .filter((p) => {
@@ -144,9 +144,13 @@ export default class ProxySandbox implements SandBox {
       ]);
     }
 
-    if (--activeSandboxCount === 0) {
-      variableWhiteList.forEach((p) => {
-        if (this.proxy.hasOwnProperty(p)) {
+    if (process.env.NODE_ENV === 'test' || --activeSandboxCount === 0) {
+      // reset the global value to the prev value
+      Object.keys(this.globalWhitelistPrevDescriptor).forEach((p) => {
+        const descriptor = this.globalWhitelistPrevDescriptor[p];
+        if (descriptor) {
+          Object.defineProperty(this.globalContext, p, descriptor);
+        } else {
           // @ts-ignore
           delete this.globalContext[p];
         }
@@ -156,6 +160,8 @@ export default class ProxySandbox implements SandBox {
     this.sandboxRunning = false;
   }
 
+  // the descriptor of global variables in whitelist before it been modified
+  globalWhitelistPrevDescriptor: { [p in typeof globalVariableWhiteList[number]]: PropertyDescriptor | undefined } = {};
   globalContext: typeof window;
 
   constructor(name: string, globalContext = window) {
@@ -173,24 +179,23 @@ export default class ProxySandbox implements SandBox {
       set: (target: FakeWindow, p: PropertyKey, value: any): boolean => {
         if (this.sandboxRunning) {
           this.registerRunningApp(name, proxy);
-          // We must kept its description while the property existed in globalContext before
+          // We must keep its description while the property existed in globalContext before
           if (!target.hasOwnProperty(p) && globalContext.hasOwnProperty(p)) {
             const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
-            const { writable, configurable, enumerable } = descriptor!;
-            if (writable) {
-              Object.defineProperty(target, p, {
-                configurable,
-                enumerable,
-                writable,
-                value,
-              });
+            const { writable, configurable, enumerable, set } = descriptor!;
+            // only writable property can be overwritten
+            // here we ignored accessor descriptor of globalContext as it makes no sense to trigger its logic(which might make sandbox escaping instead)
+            // we force to set value by data descriptor
+            if (writable || set) {
+              Object.defineProperty(target, p, { configurable, enumerable, writable: true, value });
             }
           } else {
-            // @ts-ignore
             target[p] = value;
           }
 
-          if (variableWhiteList.indexOf(p) !== -1) {
+          // sync the property to globalContext
+          if (typeof p === 'string' && globalVariableWhiteList.indexOf(p) !== -1) {
+            this.globalWhitelistPrevDescriptor[p] = Object.getOwnPropertyDescriptor(globalContext, p);
             // @ts-ignore
             globalContext[p] = value;
           }
@@ -250,11 +255,14 @@ export default class ProxySandbox implements SandBox {
           return eval;
         }
 
-        const value = propertiesWithGetter.has(p)
-          ? (globalContext as any)[p]
-          : p in target
-          ? (target as any)[p]
-          : (globalContext as any)[p];
+        const actualTarget = propertiesWithGetter.has(p) ? globalContext : p in target ? target : globalContext;
+        const value = actualTarget[p];
+
+        // frozen value should return directly, see https://github.com/umijs/qiankun/issues/2015
+        if (isPropertyFrozen(actualTarget, p)) {
+          return value;
+        }
+
         /* Some dom api must be bound to native window, otherwise it would cause exception like 'TypeError: Failed to execute 'fetch' on 'Window': Illegal invocation'
            See this code:
              const proxy = new Proxy(window, {});

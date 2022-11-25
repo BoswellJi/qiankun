@@ -18,7 +18,7 @@ import type {
   ObjectType,
 } from './interfaces';
 import { createSandboxContainer, css } from './sandbox';
-import { lexicalGlobals } from './sandbox/common';
+import { trustedGlobals } from './sandbox/common';
 import {
   Deferred,
   genAppInstanceIdByName,
@@ -399,7 +399,7 @@ export async function loadApp<T extends ObjectType>(
   // get the lifecycle hooks from module exports
   // 从模块导出中获取生命周期钩子，这里是从微应用的入口js文件中获取导出
   const scriptExports: any = await execScripts(global, sandbox && !useLooseSandbox, {
-    scopedGlobalVariables: speedySandbox ? lexicalGlobals : [],
+    scopedGlobalVariables: speedySandbox ? trustedGlobals : [],
   });
   // 从脚本导出获取生命周期
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
